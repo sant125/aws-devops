@@ -1,0 +1,33 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: default
+spec:
+  # Amazon Linux 2023 — latest AMI resolvido automaticamente
+  amiSelectorTerms:
+    - alias: al2023@latest
+
+  # Role dos nós — obtida via: terraform output karpenter_node_role_name
+  role: projetin-cluster-karpenter-node
+
+  # Subnets onde os nós serão provisionados (descoberta por tag)
+  subnetSelectorTerms:
+    - tags:
+        kubernetes.io/cluster/projetin-cluster: "owned"
+
+  # Security groups do cluster (descoberta por tag)
+  securityGroupSelectorTerms:
+    - tags:
+        aws:eks:cluster-name: projetin-cluster
+
+  # EBS root volume — gp3 por default
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 20Gi
+        volumeType: gp3
+        encrypted: true
+
+  tags:
+    Project:   projetin
+    ManagedBy: karpenter

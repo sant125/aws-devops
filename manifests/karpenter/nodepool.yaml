@@ -1,0 +1,80 @@
+---
+# NodePool Spot — workloads stateless (gin-tattoo API)
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: spot
+spec:
+  template:
+    metadata:
+      labels:
+        managed-by: karpenter
+        capacity-type: spot
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: default
+      taints:
+        - key: workload
+          value: spot
+          effect: NoSchedule
+      requirements:
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot"]
+        - key: node.kubernetes.io/instance-type
+          operator: In
+          values: ["t3.medium", "t3a.medium", "t3.large", "t3a.large"]
+      expireAfter: 72h
+  limits:
+    cpu: "40"
+    memory: 160Gi
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 2m
+
+---
+# NodePool On-demand — workloads stateful (Jenkins, CloudNativePG)
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: ondemand
+spec:
+  template:
+    metadata:
+      labels:
+        managed-by: karpenter
+        capacity-type: ondemand
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: default
+      taints:
+        - key: workload
+          value: ondemand
+          effect: NoSchedule
+      requirements:
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["on-demand"]
+        # Instâncias maiores — Jenkins e Postgres pedem mais memória
+        - key: node.kubernetes.io/instance-type
+          operator: In
+          values: ["t3.large", "t3a.large", "t3.xlarge", "t3a.xlarge"]
+      # On-demand não expira — evita restart desnecessário do DB
+      expireAfter: Never
+  limits:
+    cpu: "16"
+    memory: 64Gi
+  disruption:
+    # Só consolida quando o nó está completamente vazio
+    consolidationPolicy: WhenEmpty
+    consolidateAfter: 10m
