@@ -1,0 +1,30 @@
+## Vertical Pod Autoscaler — recommender + updater + admission controller
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vpa
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"   # sobe antes dos workloads
+spec:
+  project: default
+  source:
+    repoURL: https://cowboysysop.github.io/charts/
+    chart: vertical-pod-autoscaler
+    targetRevision: "9.x"
+    helm:
+      releaseName: vpa
+      values: |
+        admissionController:
+          enabled: true
+        recommender:
+          enabled: true
+        updater:
+          enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

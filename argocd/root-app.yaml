@@ -1,0 +1,27 @@
+## App of Apps — único apply manual necessário após o bootstrap do ArgoCD.
+## Gerencia todos os outros Applications deste repositório.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sant125/aws-devops.git
+    targetRevision: HEAD
+    path: argocd
+    directory:
+      recurse: false
+      exclude: "root-app.yaml"   # evita loop
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

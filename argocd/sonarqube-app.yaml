@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sonarqube
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  # ArgoCD 2.6+ — múltiplos sources: chart externo + values do infra repo
+  sources:
+    - repoURL: https://SonarSource.github.io/helm-chart-sonarqube
+      chart: sonarqube
+      targetRevision: "10.6.0"
+      helm:
+        releaseName: sonarqube
+        valueFiles:
+          - $values/manifests/sonarqube/values.yaml
+
+    - repoURL: git@github.com:sant125/aws-devops.git
+      targetRevision: HEAD
+      ref: values   # alias usado pelo $values acima
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sonarqube
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

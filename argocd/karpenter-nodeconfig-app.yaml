@@ -1,0 +1,24 @@
+## NodePool + EC2NodeClass — aplicados após o controller Karpenter estar rodando
+## (Karpenter controller é instalado via Terraform helm_release)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: karpenter-nodeconfig
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sant125/aws-devops.git
+    targetRevision: HEAD
+    path: manifests/karpenter
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: karpenter
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
