@@ -1,0 +1,61 @@
+controller:
+  # Plugins instalados no boot
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - github-branch-source
+    - sonarqube
+    - credentials-binding
+    - configuration-as-code
+    - job-dsl
+
+  # Recursos do controller
+  resources:
+    requests: { cpu: "500m", memory: "1Gi" }
+    limits:   { cpu: "1",   memory: "2Gi" }
+
+  # JCasC — configuração declarativa do Jenkins
+  JCasC:
+    configScripts:
+      jenkins-config: |
+        jenkins:
+          clouds:
+            - kubernetes:
+                name: kubernetes
+                serverUrl: https://kubernetes.default.svc
+                namespace: jenkins
+                jenkinsUrl: http://jenkins.jenkins.svc.cluster.local:8080
+                jenkinsTunnel: jenkins-agent.jenkins.svc.cluster.local:50000
+                containerCapStr: "10"
+        unclassified:
+          sonarGlobalConfiguration:
+            installations:
+              - name: sonarqube
+                serverUrl: http://sonarqube-sonarqube.sonarqube.svc.cluster.local:9000
+                credentialsId: sonar-token
+
+  # Fixado em nós on-demand — Jenkins tem PVC e builds ativos não podem ser interrompidos
+  tolerations:
+    - key: workload
+      operator: Equal
+      value: ondemand
+      effect: NoSchedule
+  nodeSelector:
+    capacity-type: ondemand
+
+  serviceType: ClusterIP
+
+  ingress:
+    enabled: false   # usar port-forward por enquanto
+
+persistence:
+  enabled: true
+  storageClass: gp3
+  size: 10Gi
+
+# Service account com IRSA para ECR + SNS
+serviceAccount:
+  name: jenkins-agent
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/jenkins-agent-role

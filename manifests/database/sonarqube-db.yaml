@@ -1,0 +1,12 @@
+# Database CRD — cria o banco sonarqube dentro do cluster tattoo-db existente.
+# Requer CloudNativePG >= 1.23
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: sonarqube-db
+  namespace: database
+spec:
+  name: sonarqube
+  owner: sonar
+  cluster:
+    name: tattoo-db

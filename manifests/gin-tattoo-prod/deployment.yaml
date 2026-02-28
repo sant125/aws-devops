@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gin-tattoo
+  namespace: prod
+  labels:
+    app: gin-tattoo
+    environment: prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gin-tattoo
+  template:
+    metadata:
+      labels:
+        app: gin-tattoo
+        environment: prod
+    spec:
+      tolerations:
+        - key: workload
+          operator: Equal
+          value: spot
+          effect: NoSchedule
+      nodeSelector:
+        capacity-type: spot
+      containers:
+        - name: gin-tattoo
+          image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/gin-tattoo:placeholder
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tattoo-db-credentials
+                  key: DATABASE_URL
+            - name: DB_SCHEMA
+              value: prod
+            - name: GIN_MODE
+              value: release
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gin-tattoo
+  namespace: prod
+spec:
+  selector:
+    app: gin-tattoo
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

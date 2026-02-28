@@ -1,0 +1,49 @@
+replicaCount: 1
+
+image:
+  repository: sonarqube
+  tag: community
+
+# PostgreSQL embutido desabilitado — usa o tattoo-db compartilhado
+postgresql:
+  enabled: false
+
+jdbcOverwrite:
+  enable: true
+  jdbcUrl: "jdbc:postgresql://tattoo-db-rw.database.svc.cluster.local:5432/sonarqube"
+  jdbcUsername: sonar
+  jdbcSecretName: sonarqube-db-credentials   # SealedSecret no namespace sonarqube
+  jdbcSecretPasswordKey: password
+
+persistence:
+  enabled: true
+  storageClass: gp3
+  size: 5Gi
+
+resources:
+  requests:
+    memory: "2Gi"
+    cpu: "400m"
+  limits:
+    memory: "4Gi"
+    cpu: "800m"
+
+account:
+  adminPasswordSecretName: sonarqube-admin-credentials
+
+jvmOpts: "-Xmx2048m -Xms512m"
+jvmCeOpts: "-Xmx512m -Xms128m"
+
+prometheusExporter:
+  enabled: true
+
+ingress:
+  enabled: false
+
+livenessProbe:
+  initialDelaySeconds: 120
+  periodSeconds: 30
+
+readinessProbe:
+  initialDelaySeconds: 60
+  periodSeconds: 10

@@ -1,0 +1,53 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: tattoo-db
+  namespace: database
+spec:
+  instances: 3   # 1 primary + 2 hot standby
+
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+
+  bootstrap:
+    initdb:
+      database: tattoo
+      owner: tattoo_user
+      secret:
+        name: tattoo-db-credentials
+
+  storage:
+    size: 20Gi      # gp3 suporta resize online — edite e aplique sem downtime
+    storageClass: gp3
+
+  # Cria o role sonar para o banco do SonarQube (requer CloudNativePG >= 1.22)
+  managed:
+    roles:
+      - name: sonar
+        ensure: present
+        login: true
+        passwordSecret:
+          name: sonar-role-credentials   # SealedSecret abaixo
+
+  # Fixado em nós on-demand — perder o primário num Spot causa failover desnecessário
+  # e dois Spots indo embora ao mesmo tempo pode causar split-brain
+  affinity:
+    tolerations:
+      - key: workload
+        operator: Equal
+        value: ondemand
+        effect: NoSchedule
+    nodeSelector:
+      capacity-type: ondemand
+
+  monitoring:
+    enablePodMonitor: true
+
+  # backup:
+  #   retentionPolicy: "7d"
+  #   barmanObjectStore:
+  #     destinationPath: s3://<BUCKET>/tattoo-db/
+  #     s3Credentials:
+  #       inheritFromIAMRole: true
