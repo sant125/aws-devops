@@ -1,0 +1,149 @@
+basePath: /
+definitions:
+  models.Curiosity:
+    properties:
+      category:
+        description: '"history", "culture", "science", "art"'
+        type: string
+      content:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
+  models.Style:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      origin:
+        type: string
+      popularity:
+        description: '"high", "medium", "low"'
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: API Support
+    url: https://github.com/santzin/gin-tattoo
+  description: API sobre estilos e curiosidades do mundo da tatuagem.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Gin Tattoo API
+  version: "1.0"
+paths:
+  /api/v1/curiosities:
+    get:
+      description: Returns all tattoo curiosities and interesting facts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Curiosity'
+            type: array
+      summary: List tattoo curiosities
+      tags:
+      - curiosities
+  /api/v1/curiosities/{id}:
+    get:
+      description: Returns details of a specific curiosity by ID
+      parameters:
+      - description: Curiosity ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Curiosity'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a tattoo curiosity
+      tags:
+      - curiosities
+  /api/v1/styles:
+    get:
+      description: Returns all available tattoo styles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Style'
+            type: array
+      summary: List tattoo styles
+      tags:
+      - styles
+  /api/v1/styles/{id}:
+    get:
+      description: Returns details of a specific tattoo style by ID
+      parameters:
+      - description: Style ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Style'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a tattoo style
+      tags:
+      - styles
+  /health:
+    get:
+      description: Returns service health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - system
+swagger: "2.0"

@@ -1,0 +1,10 @@
+Stack
+
+App:            Go 1.22 + Gin — /metrics (Golden Signals: RED), /health, Swagger UI
+Infra:          Terraform — VPC, EKS 1.31, Karpenter (Spot+OD), ECR, S3
+CI/CD:          Jenkins (in-cluster, JCasC, Multibranch) → ArgoCD (GitOps, App-of-Apps)
+Banco:          CloudNativePG — 3 instâncias HA, backup S3, ServiceMonitor
+Observability:  kube-prometheus-stack — Prometheus, Grafana (RED dashboard), AlertManager
+Secrets:        Bitnami SealedSecrets — criptografados no Git
+Ingress:        AWS ALB Controller
+Segurança:      golangci-lint, govulncheck, OWASP ZAP, Trivy (image scan), SonarQube
