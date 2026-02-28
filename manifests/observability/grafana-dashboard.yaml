@@ -1,0 +1,190 @@
+## Dashboard Grafana — gin-tattoo API (Golden Signals: RED + Saturation)
+## O sidecar do Grafana detecta este ConfigMap automaticamente pela label.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-gin-tattoo
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+data:
+  gin-tattoo.json: |
+    {
+      "title": "gin-tattoo API",
+      "uid": "gin-tattoo-api",
+      "tags": ["gin-tattoo", "api", "red"],
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Request Rate (req/s)",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "palette-classic" },
+              "custom": { "lineWidth": 2 }
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{namespace=~\"prod|homolog\"}[2m])) by (namespace)",
+              "legendFormat": "{{namespace}}"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Error Rate (%)",
+          "type": "timeseries",
+          "gridPos": { "x": 8, "y": 0, "w": 8, "h": 8 },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "color": { "mode": "fixed", "fixedColor": "red" },
+              "custom": { "lineWidth": 2 },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "red",   "value": 0.01 }
+                ]
+              }
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{namespace=~\"prod|homolog\",status=~\"5..\"}[2m])) by (namespace) / sum(rate(http_requests_total{namespace=~\"prod|homolog\"}[2m])) by (namespace)",
+              "legendFormat": "{{namespace}}"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Latência p50 / p95 / p99 (prod)",
+          "type": "timeseries",
+          "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": { "lineWidth": 2 }
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{namespace=\"prod\"}[2m])) by (le))",
+              "legendFormat": "p50"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"prod\"}[2m])) by (le))",
+              "legendFormat": "p95"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace=\"prod\"}[2m])) by (le))",
+              "legendFormat": "p99"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Réplicas em execução",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 8, "w": 6, "h": 4 },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red",   "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              }
+            }
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+          "targets": [
+            {
+              "expr": "kube_deployment_status_replicas_ready{namespace=~\"prod|homolog\",deployment=\"gin-tattoo\"}",
+              "legendFormat": "{{namespace}}"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "CPU Usage — gin-tattoo",
+          "type": "timeseries",
+          "gridPos": { "x": 6, "y": 8, "w": 9, "h": 8 },
+          "fieldConfig": {
+            "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"prod|homolog\",container=\"gin-tattoo\"}[2m])) by (namespace)",
+              "legendFormat": "{{namespace}}"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "title": "Memory Usage — gin-tattoo",
+          "type": "timeseries",
+          "gridPos": { "x": 15, "y": 8, "w": 9, "h": 8 },
+          "fieldConfig": {
+            "defaults": { "unit": "bytes", "custom": { "lineWidth": 2 } }
+          },
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=~\"prod|homolog\",container=\"gin-tattoo\"}) by (namespace)",
+              "legendFormat": "{{namespace}}"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "title": "HPA — Réplicas desejadas vs atual",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+          "fieldConfig": {
+            "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+          },
+          "targets": [
+            {
+              "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"prod\"}",
+              "legendFormat": "prod — atual"
+            },
+            {
+              "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"prod\"}",
+              "legendFormat": "prod — desejado"
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "title": "Top Endpoints por volume (prod)",
+          "type": "bargauge",
+          "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "palette-classic" }
+            }
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["mean"] },
+            "orientation": "horizontal",
+            "displayMode": "gradient"
+          },
+          "targets": [
+            {
+              "expr": "topk(8, sum(rate(http_requests_total{namespace=\"prod\"}[5m])) by (handler))",
+              "legendFormat": "{{handler}}"
+            }
+          ]
+        }
+      ]
+    }

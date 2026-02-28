@@ -1,0 +1,63 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: gin-tattoo-alerts
+  namespace: observability
+  labels:
+    app: kube-prometheus-stack
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: gin-tattoo.availability
+      rules:
+        - alert: GinTattooHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{namespace="prod",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{namespace="prod"}[5m])) > 0.05
+          for: 2m
+          labels:
+            severity: critical
+            namespace: prod
+          annotations:
+            summary: "Alta taxa de erros 5xx em prod"
+            description: "Error rate acima de 5% nos últimos 2 minutos (atual: {{ $value | humanizePercentage }})."
+
+        - alert: GinTattooHighLatency
+          expr: |
+            histogram_quantile(0.99,
+              sum(rate(http_request_duration_seconds_bucket{namespace="prod"}[5m])) by (le)
+            ) > 1
+          for: 5m
+          labels:
+            severity: warning
+            namespace: prod
+          annotations:
+            summary: "Latência p99 acima de 1s em prod"
+            description: "p99 de {{ $value | humanizeDuration }} nos últimos 5 minutos."
+
+        - alert: GinTattooPodsNotReady
+          expr: |
+            kube_deployment_status_replicas_ready{namespace="prod",deployment="gin-tattoo"}
+            < kube_deployment_spec_replicas{namespace="prod",deployment="gin-tattoo"}
+          for: 3m
+          labels:
+            severity: critical
+            namespace: prod
+          annotations:
+            summary: "Pods do gin-tattoo em prod não estão Ready"
+            description: "{{ $value }} réplicas prontas de {{ $labels.deployment }}."
+
+    - name: gin-tattoo.scaling
+      rules:
+        - alert: GinTattooHPAMaxReplicas
+          expr: |
+            kube_horizontalpodautoscaler_status_current_replicas{namespace="prod"}
+            >= kube_horizontalpodautoscaler_spec_max_replicas{namespace="prod"}
+          for: 5m
+          labels:
+            severity: warning
+            namespace: prod
+          annotations:
+            summary: "HPA de prod atingiu o máximo de réplicas"
+            description: "Considere aumentar maxReplicas ou otimizar a aplicação."

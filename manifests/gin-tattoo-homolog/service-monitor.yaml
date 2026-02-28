@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: gin-tattoo
+  namespace: homolog
+  labels:
+    app: gin-tattoo
+    environment: homolog
+spec:
+  selector:
+    matchLabels:
+      app: gin-tattoo
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
