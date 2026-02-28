@@ -45,9 +45,10 @@ spec:
   monitoring:
     enablePodMonitor: true
 
-  # backup:
-  #   retentionPolicy: "7d"
-  #   barmanObjectStore:
-  #     destinationPath: s3://<BUCKET>/tattoo-db/
-  #     s3Credentials:
-  #       inheritFromIAMRole: true
+  backup:
+    retentionPolicy: "7d"
+    barmanObjectStore:
+      # Bucket criado pelo Terraform — terraform output s3_backup_bucket
+      destinationPath: s3://projetin-cnpg-backup/tattoo-db
+      s3Credentials:
+        inheritFromIAMRole: true

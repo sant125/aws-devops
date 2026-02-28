@@ -49,7 +49,7 @@ spec:
       command: [sleep]
       args: [infinity]
     - name: kubectl
-      image: bitnami/kubectl:latest
+      image: dtzar/helm-kubectl:latest   # inclui kubectl + helm + yq + git
       command: [sleep]
       args: [infinity]
     - name: zap
@@ -191,8 +191,10 @@ spec:
               git clone https://\${GH_TOKEN}@github.com/sant125/aws-devops.git /tmp/infra
               cd /tmp/infra
 
-              sed -i 's|image: .*projetin-app.*|image: ${ECR_URL}:${IMAGE_TAG}|' \
-                manifests/gin-tattoo-${DEPLOY_NS}/deployment.yaml
+              # yq atualiza só o campo .spec.template.spec.containers[0].image
+              # sed seria frágil se o manifest tiver múltiplos containers ou mudar de formato
+              yq e '.spec.template.spec.containers[0].image = "${ECR_URL}:${IMAGE_TAG}"' \
+                -i manifests/gin-tattoo-${DEPLOY_NS}/deployment.yaml
 
               git config user.email "jenkins@ci.local"
               git config user.name "Jenkins"
